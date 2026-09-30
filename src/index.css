@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #07070b;
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-brd: rgba(255, 255, 255, 0.09);
+  --violet: #7c3aed;
+  --magenta: #d6409f;
+  --pink: #ec4899;
+  --cyan: #22d3ee;
+  --blue: #3b82f6;
+  --orange: #f97316;
+  --text: #eef0f5;
+  --muted: #9aa0ac;
+  --grad: linear-gradient(115deg, var(--violet), var(--magenta) 40%, var(--pink) 55%, var(--cyan) 85%);
+  --grad-text: var(--grad);
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #DAEBE3;
+  --panel: rgba(253, 232, 211, 0.7);
+  --panel-brd: rgba(101, 113, 102, 0.3);
+  --text: #3d473e;
+  --muted: #657166;
+  --violet: #99CDD8;
+  --magenta: #F3C3B2;
+  --pink: #F3C3B2;
+  --cyan: #99CDD8;
+  --blue: #99CDD8;
+  --orange: #F3C3B2;
+  --grad: linear-gradient(115deg, #99CDD8, #CFD6C4 50%, #F3C3B2);
+  --grad-text: linear-gradient(115deg, #657166, #4a8797 50%, #657166);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+  padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.glass {
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+}
+
+.glass:hover {
+  box-shadow: 0 0 26px -6px rgba(124, 58, 237, 0.35);
+}
+
+.grad-text {
+  background: var(--grad-text);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradmove 8s ease infinite;
+}
+
+@keyframes gradmove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, 40px); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(40px, -20px); }
+}
+
+.blob1 {
+  animation: float1 14s ease-in-out infinite;
+}
+
+.blob2 {
+  animation: float2 16s ease-in-out infinite;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    padding-bottom: 0 !important;
+  }
+  header, footer, nav, .ai-fab, .ai-panel, .bnav, button:not(.printable-btn) {
+    display: none !important;
+  }
+}

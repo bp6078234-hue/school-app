@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'bp6078234@gmail.com' ||
+        request.auth.token.email == 'hss.ahmedpur.khd.mp@gmail.com'
+      );
+    }
+
+    function isTeacher() {
+      return isSignedIn() && (
+        isBootstrappedAdmin() ||
+        exists(/databases/$(database)/documents/teachers/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['teacher', 'admin'])
+      );
+    }
+
+    // USERS COLLECTION
+    // Enforces:
+    // 1. Newly created accounts MUST have role == 'student' (or must be bootstrapped admin)
+    // 2. Regular users cannot elevate their role to 'teacher' or 'admin'
+    // 3. User can only read/edit their own profile; teachers can view student directory
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isTeacher());
+      allow list: if isSignedIn() && isTeacher();
+
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        (request.resource.data.role == 'student') ||
+        (isBootstrappedAdmin() && request.resource.data.role in ['teacher', 'admin'])
+      );
+
+      allow update: if isSignedIn() && (
+        // Regular user can update personal info, but NEVER modify their role
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
+        // Only teachers/admins can elevate or change another user's role
+        isTeacher()
+      );
+
+      allow delete: if isTeacher();
+    }
+
+    // TEACHERS COLLECTION (Explicit teacher registry)
+    match /teachers/{teacherId} {
+      allow read: if isSignedIn();
+      allow write: if isBootstrappedAdmin() || (isTeacher() && isValidId(teacherId));
+    }
+
+    // ADMISSIONS COLLECTION
+    // Enforces:
+    // 1. Sensitive PII cannot be read publicly
+    // 2. Students can ONLY read and list their own admission application
+    // 3. Teachers can read and list all admission applications for review
+    // 4. Students can only update their application if it is still in 'draft' status
+    // 5. Teachers can update status and remarks
+    match /admissions/{admissionId} {
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isTeacher()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isTeacher()
+      );
+
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status in ['draft', 'submitted'];
+
+      allow update: if isSignedIn() && (
+        // Student can update their own application only while in draft status
+        (resource.data.userId == request.auth.uid && resource.data.status == 'draft') ||
+        // Teacher can update status, remarks, and review data
+        isTeacher()
+      );
+
+      allow delete: if isTeacher();
+    }
+
+    // QUIZZES COLLECTION
+    // Enforces:
+    // 1. All authenticated students can read published quizzes
+    // 2. Only authorized teachers can create, update, publish, or delete quizzes
+    match /quizzes/{quizId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isTeacher();
+    }
+
+    // NOTIFICATIONS COLLECTION
+    // Enforces:
+    // 1. User can only read notifications intended for them (or teachers for broadcast)
+    match /notifications/{notificationId} {
+      allow get, list: if isSignedIn() && (
+        resource.data.recipientUid == request.auth.uid ||
+        (resource.data.recipientUid == 'teachers' && isTeacher())
+      );
+
+      allow create: if isSignedIn();
+
+      allow update: if isSignedIn() && (
+        resource.data.recipientUid == request.auth.uid ||
+        (resource.data.recipientUid == 'teachers' && isTeacher())
+      );
+
+      allow delete: if isTeacher();
+    }
+  }
+}

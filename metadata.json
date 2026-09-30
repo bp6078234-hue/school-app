@@ -1,0 +1,6 @@
+{
+  "name": "GHSS Ahamdpur, Khaigaon — School App",
+  "description": "शासकीय उच्चतर माध्यमिक विद्यालय, अहमदपुर खैगांव (खंडवा) - Official School Web App with Digital Admission, AI Assistant, and Quiz System",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
